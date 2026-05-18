@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TV1 • Rissi Performance</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root{
+      --bg:#07111f;
+      --panel:#0d1a2b;
+      --line:rgba(148,163,184,.20);
+      --text:#f8fafc;
+      --muted:#94a3b8;
+      --green:#22c55e;
+      --green2:#16a34a;
+      --blue:#0ea5e9;
+      --red:#ef4444;
+      --greenSoft:rgba(34,197,94,.16);
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+
+    html{
+      /* Compensa o zoom 80% do navegador: 100/80 = 1.25 */
+      zoom: 1.25;
+    }
+
+    html,body{
+      width:100%;
+      height:100%;
+      background:#000;
+      color:var(--text);
+      font-family:Inter,Arial,Helvetica,sans-serif;
+      overflow:hidden;
+    }
+
+    body{
+      display:flex;
+      align-items:stretch;
+      justify-content:stretch;
+    }
+
+    .dashboard{
+      width:100vw;
+      height:100vh;
+      background:#000;
+      overflow:hidden;
+    }
+
+    .slide{
+      display:none;
+      width:100%;
+      height:100%;
+      padding:16px 20px;
+      background:radial-gradient(circle at top left,rgba(34,197,94,.11),transparent 28%),var(--bg);
+      gap:12px;
+      overflow:hidden;
+    }
+
+    .slide.active{display:grid}
+
+    .slide.marketing{
+      grid-template-rows: 56px 130px minmax(0,1fr);
+    }
+
+    .slide.comercial{
+      grid-template-rows: 56px 130px minmax(0,1fr) 130px;
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      min-width:0;
+    }
+
+    .brand{display:flex;align-items:center;gap:12px;min-width:0}
+
+    .logo{
+      width:40px;height:40px;border-radius:10px;
+      background:linear-gradient(135deg,var(--green),#0f8c3b);
+      color:#04110a;display:grid;place-items:center;
+      font-weight:900;font-size:15px;flex:0 0 auto;
+      box-shadow:0 0 22px rgba(34,197,94,.25);
+    }
+
+    .title h1{
+      margin:0;font-size:30px;line-height:.95;letter-spacing:-.8px;
+      text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+
+    .title p{margin:5px 0 0;color:var(--muted);font-size:12px}
+
+    .status{display:flex;align-items:center;gap:16px;font-size:13px;font-weight:700;white-space:nowrap}
+    .live{display:flex;align-items:center;gap:7px;color:var(--green);font-weight:900}
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background:var(--green);box-shadow:0 0 14px var(--green);
+      animation:pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+    .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;min-width:0}
+    .kpis.five{grid-template-columns:repeat(5,minmax(0,1fr))}
+
+    .card,.chart-panel,.table-panel{
+      background:linear-gradient(180deg,rgba(17,32,52,.96),rgba(8,18,31,.96));
+      border:1px solid rgba(34,197,94,.16);
+      border-radius:12px;
+      box-shadow:0 0 30px rgba(34,197,94,.08);
+    }
+
+    .kpi{
+      padding:14px 16px;display:flex;align-items:center;justify-content:space-between;
+      position:relative;overflow:hidden;min-width:0;
+    }
+
+    .kpi:before{
+      content:"";position:absolute;inset:0;
+      background:linear-gradient(90deg,rgba(34,197,94,.13),transparent 36%);
+      opacity:.65;pointer-events:none;
+    }
+
+    .kpi-content{position:relative;z-index:1;min-width:0;width:100%}
+    .kpi label{display:block;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+    .kpi .value{font-size:42px;line-height:.9;font-weight:950;letter-spacing:-2px;white-space:nowrap}
+    .kpis.five .kpi .value{font-size:34px}
+    .kpi .sub{margin-top:6px;color:var(--muted);font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .kpi .icon{
+      width:36px;height:36px;border-radius:50%;
+      background:var(--greenSoft);color:var(--green);
+      display:grid;place-items:center;font-size:16px;font-weight:900;
+      position:relative;z-index:1;flex:0 0 auto;margin-left:8px;
+    }
+
+    .main,.bottom{min-height:0;overflow:hidden}
+
+    .chart-panel{
+      padding:12px 16px 8px;
+      min-height:0;overflow:hidden;
+      display:flex;flex-direction:column;
+    }
+
+    .panel-head{
+      display:flex;align-items:flex-start;justify-content:space-between;
+      margin-bottom:6px;flex:0 0 auto;
+    }
+    .panel-head h2{margin:0;font-size:20px;letter-spacing:-.4px}
+    .panel-head p{margin:3px 0 0;color:var(--muted);font-size:11px}
+    .period{
+      border:1px solid rgba(148,163,184,.25);color:var(--text);
+      border-radius:8px;padding:6px 10px;font-size:10px;
+      background:rgba(8,18,31,.72);font-weight:800;white-space:nowrap;
+    }
+
+    .chart-wrap{
+      flex:1;
+      min-height:0;
+      position:relative;
+    }
+    .chart-wrap canvas{
+      position:absolute;
+      inset:0;
+      width:100% !important;
+      height:100% !important;
+    }
+
+    .table-panel{
+      padding:6px 12px;
+      min-height:0;overflow:hidden;
+      display:flex;flex-direction:column;
+      justify-content:center;
+    }
+
+    table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px}
+    thead th{
+      color:#dbeafe;text-transform:uppercase;letter-spacing:.4px;
+      font-size:8px;text-align:left;padding:4px 7px;
+      border-bottom:1px solid var(--line);background:rgba(255,255,255,.025)
+    }
+    tbody td{padding:4px 7px;border-bottom:1px solid rgba(148,163,184,.12);color:#eef2ff;font-weight:650}
+    tbody tr:last-child td{border-bottom:none;color:var(--green);font-weight:950;font-size:12px}
+    td:not(:first-child),th:not(:first-child){text-align:center}
+
+    .trend{display:inline-flex;align-items:center;gap:3px;font-weight:900}
+    .positive{color:var(--green)} .negative{color:var(--red)} .neutral{color:var(--muted)}
+
+    .bar-mini{width:34%;height:6px;background:rgba(148,163,184,.14);border-radius:20px;display:inline-block;vertical-align:middle;margin-left:6px;overflow:hidden}
+    .bar-mini span{display:block;height:100%;background:linear-gradient(90deg,var(--green2),var(--green));border-radius:20px}
+
+    .error{position:fixed;inset:0;display:none;place-items:center;background:#000;color:#fff;padding:40px;text-align:center;font-size:22px;z-index:999}
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+
+    <div class="slide marketing active" id="slideEstrategico">
+      <header>
+        <div class="brand">
+          <div class="logo">IG</div>
+          <div class="title">
+            <h1>Marketing Estratégico</h1>
+            <p>Performance, alcance, crescimento orgânico e consistência de conteúdo</p>
+          </div>
+        </div>
+        <div class="status">
+          <div class="live"><span class="dot"></span> Slide 1/3 • Estratégico</div>
+          <div class="dateNow">--/--/----</div>
+          <div class="timeNow">--:--</div>
+        </div>
+      </header>
+      <section class="kpis five">
+        <div class="card kpi"><div class="kpi-content"><label>Seguidores</label><div class="value" id="strSeguidores">0</div><div class="sub">Base atual</div></div><div class="icon">◎</div></div>
+        <div class="card kpi"><div class="kpi-content"><label>Variação</label><div class="value" id="strVariacao">0</div><div class="sub">vs registro anterior</div></div><div class="icon">↕</div></div>
+        <div class="card kpi"><div class="kpi-content"><label>Alcance</label><div class="value" id="strAlcance">0</div><div class="sub">Total no período</div></div><div class="icon">◉</div></div>
+        <div class="card kpi"><div class="kpi-content"><label>Interações</label><div class="value" id="strInteracoes">0</div><div class="sub">Engajamento total</div></div><div class="icon">★</div></div>
+        <div class="card kpi"><div class="kpi-content"><label>Posts</label><div class="value" id="strPosts">0</div><div class="sub">Conteúdos publicados</div></div><div class="icon">▣</div></div>
+      </section>
+      <section class="main">
+        <div class="chart-panel">
+          <div class="panel-head">
+            <div><h2>Alcance e Interações</h2><p>Evolução por data registrada na planilha</p></div>
+            <div class="period">Instagram Orgânico</div>
+          </div>
+          <div class="chart-wrap"><canvas id="estrategicoChart"></canvas></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="slide marketing" id="slideExecutivo">
+      <header>
+        <div class="brand">
+          <div class="logo">MKT</div>
+          <div class="title">
+            <h1>Marketing Executivo</h1>
+            <p>Visão rápida de performance do Instagram</p>
+          </div>
+        </div>
+        <div class="status">
+          <div class="live"><span class="dot"></span> Slide 2/3 • Executivo</div>
+          <div class="dateNow">--/--/----</div>
+          <div class="timeNow">--:--</div>
+        </div>
+      </header>
+      <section class="kpis">
+        <div class="card kpi"><div class="kpi-content"><label>Seguidores</label><div class="value" id="exeSeguidores">0</div><div class="sub">Base atual do perfil</div></div><div class="icon">◎</div></div>
+        <div class="card kpi"><div class="kpi-content"><label>Alcance</label><div class="value" id="exeAlcance">0</div><div class="sub">Total do último registro</div></div><div class="icon">◉</div></div>
+        <div class="card kpi"><div class="kpi-content"><label>Interações</label><div class="value" id="exeInteracoes">0</div><div class="sub">Engajamento do período</div></div><div class="icon">★</div></div>
+        <div class="card kpi"><div class="kpi-content"><label>Posts</label><div class="value" id="exePosts">0</div><div class="sub">Volume de conteúdo</div></div><div class="icon">▣</div></div>
+      </section>
+      <section class="main">
+        <div class="chart-panel">
+          <div class="panel-head">
+            <div><h2>Alcance Diário</h2><p>Leitura simples e objetiva para acompanhamento visual</p></div>
+            <div class="period">Resumo Executivo</div>
+          </div>
+          <div class="chart-wrap"><canvas id="executivoChart"></canvas></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="slide comercial" id="slideComercial">
+      <header>
+        <div class="brand">
+          <div class="logo">R</div>
+          <div class="title">
+            <h1>Comercial</h1>
+            <p>Aquisição, qualificação e conversão de leads</p>
+          </div>
+        </div>
+        <div class="status">
+          <div class="live"><span class="dot"></span> Slide 3/3 • Comercial</div>
+          <div class="dateNow">--/--/----</div>
+          <div class="timeNow">--:--</div>
+        </div>
+      </header>
+      <section class="kpis">
+        <div class="card kpi"><div class="kpi-content"><label>Leads</label><div class="value" id="kpiLeads">0</div><div class="sub">Total de leads no período</div></div><div class="icon">●●</div></div>
+        <div class="card kpi"><div class="kpi-content"><label>Qualificados</label><div class="value" id="kpiQualificados">0</div><div class="sub">Leads aproveitáveis</div></div><div class="icon">✓</div></div>
+        <div class="card kpi"><div class="kpi-content"><label>Vendas</label><div class="value" id="kpiVendas">0</div><div class="sub">Total de fechamentos</div></div><div class="icon">▰</div></div>
+        <div class="card kpi"><div class="kpi-content"><label>Conversão</label><div class="value" id="kpiConversao">0%</div><div class="sub">Qualificados x vendas</div></div><div class="icon">◎</div></div>
+      </section>
+      <section class="main">
+        <div class="chart-panel">
+          <div class="panel-head">
+            <div><h2>Leads por Origem</h2><p>Total de leads no período, sem Instagram Orgânico</p></div>
+            <div class="period">Base: RD</div>
+          </div>
+          <div class="chart-wrap"><canvas id="leadsChart"></canvas></div>
+        </div>
+      </section>
+      <section class="bottom">
+        <div class="table-panel">
+          <table>
+            <thead><tr><th>Origem</th><th>Leads</th><th>Qualificados</th><th>Vendas</th><th>Conversão</th></tr></thead>
+            <tbody id="originTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <div class="error" id="errorBox">Não foi possível carregar os dados da planilha.<br/>Verifique se os CSVs publicados continuam ativos.</div>
+
+  <script>
+    const CSV_RD_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vTTDt-N1oyVt6yeui2V5cobmVpRHmbqvtNhVFra5ezuGWDKUdJ6P5xuqIQZ5XMZrs2zCWwXN-HJJNzv/pub?gid=404172662&single=true&output=csv";
+    const CSV_IG_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vTTDt-N1oyVt6yeui2V5cobmVpRHmbqvtNhVFra5ezuGWDKUdJ6P5xuqIQZ5XMZrs2zCWwXN-HJJNzv/pub?gid=701920371&single=true&output=csv";
+    let leadsChart,estrategicoChart,executivoChart,currentSlide=0;
+    const slides=["slideEstrategico","slideExecutivo","slideComercial"];
+    function rotateSlides(){slides.forEach((id,index)=>{const el=document.getElementById(id);if(!el)return;el.classList.toggle("active",index===currentSlide)});currentSlide=(currentSlide+1)%slides.length}
+    setInterval(rotateSlides,60000);
+    function parseCSV(text){const rows=[];let row=[],value="",inQuotes=false;for(let i=0;i<text.length;i++){const char=text[i],next=text[i+1];if(char==='"'&&inQuotes&&next==='"'){value+='"';i++}else if(char==='"'){inQuotes=!inQuotes}else if(char===','&&!inQuotes){row.push(value.trim());value=""}else if((char==='\n'||char==='\r')&&!inQuotes){if(value||row.length){row.push(value.trim());rows.push(row);row=[];value=""}if(char==='\r'&&next==='\n')i++}else{value+=char}}if(value||row.length){row.push(value.trim());rows.push(row)}return rows}
+    function rowsFromCSV(text){const parsed=parseCSV(text).filter(r=>r.some(Boolean));const headers=parsed.shift().map(h=>h.trim());return parsed.map(row=>{const obj={};headers.forEach((h,i)=>obj[h]=row[i]);return obj})}
+    function toNumber(value){if(value===undefined||value===null)return 0;const clean=String(value).replace(/R\$/g,"").replace(/%/g,"").replace(/\s/g,"").replace(/\./g,"").replace(/,/g,".");const n=Number(clean);return Number.isFinite(n)?n:0}
+    function formatNumber(n){return new Intl.NumberFormat("pt-BR",{maximumFractionDigits:0}).format(n||0)}
+    function formatPercent(n){return new Intl.NumberFormat("pt-BR",{style:"percent",minimumFractionDigits:1,maximumFractionDigits:1}).format(n||0)}
+    function updateClock(){const now=new Date(),date=now.toLocaleDateString("pt-BR"),time=now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});document.querySelectorAll(".dateNow").forEach(el=>el.textContent=date);document.querySelectorAll(".timeNow").forEach(el=>el.textContent=time)}
+    function isOrganicInstagram(origem){const value=String(origem||"").trim().toLowerCase();return value.includes("instagram orgânico")||value.includes("instagram organico")}
+    function aggregateRD(dataRows){const map=new Map();dataRows.forEach(r=>{const origem=String(r.Origem||"Outros").trim();if(!origem||isOrganicInstagram(origem))return;if(!map.has(origem))map.set(origem,{origem,investimento:0,leads:0,qualificados:0,vendas:0});const item=map.get(origem);item.investimento+=toNumber(r.Investimento);item.leads+=toNumber(r.Leads);item.qualificados+=toNumber(r.Qualificados);item.vendas+=toNumber(r.Vendas)});return Array.from(map.values()).sort((a,b)=>b.leads-a.leads)}
+    function renderCommercialKpis(rows){const totals=rows.reduce((acc,r)=>{acc.leads+=r.leads;acc.qualificados+=r.qualificados;acc.vendas+=r.vendas;return acc},{leads:0,qualificados:0,vendas:0});document.getElementById("kpiLeads").textContent=formatNumber(totals.leads);document.getElementById("kpiQualificados").textContent=formatNumber(totals.qualificados);document.getElementById("kpiVendas").textContent=formatNumber(totals.vendas);document.getElementById("kpiConversao").textContent=formatPercent(totals.qualificados?totals.vendas/totals.qualificados:0)}
+    function chartOptions(axis,showLegend=false){return{responsive:true,maintainAspectRatio:false,indexAxis:axis,animation:{duration:900},layout:{padding:{top:2,right:22,bottom:0,left:0}},plugins:{legend:{display:showLegend,labels:{color:"#F8FAFC",font:{size:12,weight:"700"}}},tooltip:{enabled:false}},scales:{x:{beginAtZero:true,grid:{color:"rgba(148,163,184,.14)",lineWidth:1},ticks:{color:"#CBD5E1",font:{size:11,weight:"700"}},border:{display:false}},y:{beginAtZero:true,grid:axis==="x"?{color:"rgba(148,163,184,.14)",lineWidth:1}:{display:false},ticks:{color:"#F8FAFC",font:{size:12,weight:"800"}},border:{display:false}}}}}
+    function barLabelPlugin(values){return{id:"barLabels",afterDatasetsDraw(chart){const ctx=chart.ctx;ctx.save();ctx.fillStyle="#F8FAFC";ctx.font="bold 13px Arial";ctx.textBaseline="middle";chart.getDatasetMeta(0).data.forEach((bar,i)=>ctx.fillText(values[i],bar.x+8,bar.y));ctx.restore()}}}
+    function renderCommercialChart(rows){const labels=rows.map(r=>r.origem),values=rows.map(r=>r.leads),ctx=document.getElementById("leadsChart").getContext("2d");if(leadsChart)leadsChart.destroy();leadsChart=new Chart(ctx,{type:"bar",data:{labels,datasets:[{label:"Leads",data:values,borderWidth:0,borderRadius:5,barThickness:24,backgroundColor:"#22C55E"}]},options:chartOptions("y",false),plugins:[barLabelPlugin(values)]})}
+    function renderCommercialTable(rows){const total=rows.reduce((acc,r)=>{acc.leads+=r.leads;acc.qualificados+=r.qualificados;acc.vendas+=r.vendas;return acc},{origem:"TOTAL",leads:0,qualificados:0,vendas:0});const finalRows=[...rows,total];const maxConv=Math.max(...rows.map(r=>r.qualificados?r.vendas/r.qualificados:0),.01);document.getElementById("originTable").innerHTML=finalRows.map(r=>{const conv=r.qualificados?r.vendas/r.qualificados:0,width=Math.max(2,Math.round((conv/maxConv)*100)),isTotal=r.origem==="TOTAL";return`<tr><td>${r.origem}</td><td>${formatNumber(r.leads)}</td><td>${formatNumber(r.qualificados)}</td><td>${formatNumber(r.vendas)}</td><td>${formatPercent(conv)}${isTotal?"":`<span class="bar-mini"><span style="width:${width}%"></span></span>`}</td></tr>`}).join("")}
+    function normalizeIG(rows){return rows.filter(r=>r.Data).map((r,index,arr)=>{const seguidores=toNumber(r.Seguidores),cliques=toNumber(r.Cliques),engajamento=toNumber(r.Engajamento||r.Interações||r.Interacoes),alcance=toNumber(r.Alcance),posts=toNumber(r.Posts||r.Postagens),taxaRaw=toNumber(r["%"]||r.Taxa||r["Taxa Engajamento %"]),taxa=taxaRaw>1?taxaRaw/100:(taxaRaw||(seguidores?engajamento/seguidores:0)),anterior=index>0?toNumber(arr[index-1].Seguidores):seguidores,variacao=seguidores-anterior;return{data:r.Data,seguidores,cliques,engajamento,alcance,posts,taxa,variacao}})}
+    function trendText(value){if(value>0)return`<span class="trend positive">▲ +${formatNumber(value)}</span>`;if(value<0)return`<span class="trend negative">▼ ${formatNumber(value)}</span>`;return`<span class="trend neutral">— 0</span>`}
+    function renderStrategicIG(rows){const last=rows[rows.length-1]||{seguidores:0,variacao:0,alcance:0,engajamento:0,posts:0};document.getElementById("strSeguidores").textContent=formatNumber(last.seguidores);document.getElementById("strVariacao").innerHTML=trendText(last.variacao);document.getElementById("strAlcance").textContent=formatNumber(last.alcance);document.getElementById("strInteracoes").textContent=formatNumber(last.engajamento);document.getElementById("strPosts").textContent=formatNumber(last.posts);const labels=rows.map(r=>r.data),ctx=document.getElementById("estrategicoChart").getContext("2d");if(estrategicoChart)estrategicoChart.destroy();estrategicoChart=new Chart(ctx,{type:"bar",data:{labels,datasets:[{label:"Alcance",data:rows.map(r=>r.alcance),backgroundColor:"#22C55E",borderRadius:5,barThickness:22},{label:"Interações",data:rows.map(r=>r.engajamento),backgroundColor:"#0EA5E9",borderRadius:5,barThickness:22}]},options:chartOptions("x",true)})}
+    function renderExecutiveIG(rows){const last=rows[rows.length-1]||{seguidores:0,alcance:0,engajamento:0,posts:0};document.getElementById("exeSeguidores").textContent=formatNumber(last.seguidores);document.getElementById("exeAlcance").textContent=formatNumber(last.alcance);document.getElementById("exeInteracoes").textContent=formatNumber(last.engajamento);document.getElementById("exePosts").textContent=formatNumber(last.posts);const labels=rows.map(r=>r.data),values=rows.map(r=>r.alcance),ctx=document.getElementById("executivoChart").getContext("2d");if(executivoChart)executivoChart.destroy();executivoChart=new Chart(ctx,{type:"line",data:{labels,datasets:[{label:"Alcance",data:values,borderColor:"#22C55E",backgroundColor:"rgba(34,197,94,.16)",fill:true,tension:.35,pointRadius:4,pointBackgroundColor:"#22C55E",borderWidth:3}]},options:chartOptions("x",false)})}
+    async function loadData(){try{const rdRes=await fetch(CSV_RD_URL+"&cacheBust="+Date.now()),igRes=await fetch(CSV_IG_URL+"&cacheBust="+Date.now());if(!rdRes.ok||!igRes.ok)throw new Error("CSV indisponível");const rdRowsRaw=rowsFromCSV(await rdRes.text()).filter(r=>r.Origem&&!isOrganicInstagram(r.Origem));const rdRows=aggregateRD(rdRowsRaw);renderCommercialKpis(rdRows);renderCommercialChart(rdRows);renderCommercialTable(rdRows);const igRows=normalizeIG(rowsFromCSV(await igRes.text()));renderStrategicIG(igRows);renderExecutiveIG(igRows);document.getElementById("errorBox").style.display="none"}catch(error){console.error(error);document.getElementById("errorBox").style.display="grid"}}
+    updateClock();setInterval(updateClock,30000);loadData();setInterval(loadData,5*60*1000);
+  </script>
+</body>
+</html>
